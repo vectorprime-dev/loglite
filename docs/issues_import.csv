@@ -1,0 +1,592 @@
+title,description,labels,difficulty
+Define LogLevel Enum,"**Description**
+Implement a standard `LogLevel` enum in the `loglite-core` module representing severities for logging events.
+
+**Acceptance Criteria**
+- Enums created: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`.
+- Each enum has an associated integer value (e.g., TRACE=100, DEBUG=200, INFO=300, WARN=400, ERROR=500, FATAL=600) for numeric comparisons.
+- Implement a method `boolean isEnabled(LogLevel configuredLevel)` that compares current severity to active severity.","core, good-first-issue, feature",Easy
+Create LogEvent Record,"**Description**
+Create a Java `record` named `LogEvent` to model structured log details immutable across downstream threads.
+
+**Acceptance Criteria**
+- Fields included: `Instant timestamp`, `String loggerName`, `LogLevel level`, `String message`, `String threadName`, `Throwable throwable`, `Map<String, String> mdc`.
+- Record must have builder support or standard constructor initialization.
+- Immutable with proper defensive copy of metadata map.","core, feature",Easy
+Implement Core Logger Interface & Standard Logger,"**Description**
+Create a base `Logger` interface outlining logging capability, alongside its standard implementation `LogliteLogger`.
+
+**Acceptance Criteria**
+- Interface exposes logging methods: `trace(msg)`, `debug(msg)`, `info(msg)`, `warn(msg)`, `error(msg)`, `fatal(msg)`.
+- Support parameterized messages with brackets (e.g. `logger.info(""Hello {}"", name)`).
+- Implementation delegates event building to context handlers.","core, feature",Easy
+Create Basic ConsoleAppender,"**Description**
+Create a basic `ConsoleAppender` responsible for writing formatted logs to standard outputs.
+
+**Acceptance Criteria**
+- Logs of level `WARN` and below are printed to `System.out`.
+- Logs of level `ERROR` and `FATAL` are printed to `System.err`.
+- Appender accepts a formatter layout class.","core, good-first-issue, feature",Easy
+Implement TextFormatter Layout,"**Description**
+Write a `TextFormatter` implementing a default layout to output log events in text format.
+
+**Acceptance Criteria**
+- Formats as: `[YYYY-MM-DD HH:mm:ss.SSS] [LEVEL] [Thread] LoggerName - Message`.
+- Properly formats empty logger names or exceptions if present.","core, feature",Easy
+Implement JsonFormatter using Jackson,"**Description**
+Create a `JsonFormatter` which formats `LogEvent` fields into a structured JSON string.
+
+**Acceptance Criteria**
+- Uses `Jackson` data-binding library.
+- Serializes timestamp to ISO-8601 string, log level, thread name, logger name, message, and MDC object.
+- Ignores null values in serialization to keep log lines compact.","core, feature",Easy
+Create Custom PatternFormatter,"**Description**
+Write a parser-based `PatternFormatter` using format strings (e.g. `%d [%t] %p %c - %m%n`).
+
+**Acceptance Criteria**
+- `%d` formats date-time.
+- `%t` formats thread name.
+- `%p` formats level.
+- `%c` formats logger category name.
+- `%m` formats message.
+- `%n` outputs system line separator.","core, feature",Medium
+Create ThreadLocal-based MDC (Mapped Diagnostic Context),"**Description**
+Implement a static `MDC` wrapper utilizing `ThreadLocal` storage for thread-bound metadata tracking.
+
+**Acceptance Criteria**
+- Exposes `put(String key, String value)`, `get(String key)`, `remove(String key)`, and `clear()`.
+- Uses `ThreadLocal<Map<String, String>>` initialized lazily.
+- Thread-safe copy-on-write maps are stored to prevent concurrent access issues.","core, good-first-issue, feature",Easy
+Create LogFilter Interface and ThresholdFilter,"**Description**
+Define a `LogFilter` interface enabling custom logging interception, and implement a `ThresholdFilter`.
+
+**Acceptance Criteria**
+- Interface exposes method: `boolean filter(LogEvent event)`.
+- `ThresholdFilter` discards any events whose severity falls below a specified minimum level configuration.","core, feature",Easy
+Implement LoggerContext & LogManager Singleton,"**Description**
+Build a static `LogManager` management class keeping track of loggers created throughout runtime context.
+
+**Acceptance Criteria**
+- Maintains `ConcurrentHashMap` of registered loggers by name.
+- Exposes `getLogger(String name)` and dynamic appender injection during runtime.","core, feature",Easy
+Write AsyncAppender using Virtual Threads,"**Description**
+Implement an asynchronous logger wrapper using Java 25 Virtual Threads for low-latency non-blocking logging.
+
+**Acceptance Criteria**
+- Delegates execution of writing events to a virtual thread-backed ExecutorService.
+- Internal queue buffers up to 1024 logs before dropping or blocking (configurable policy).","core, feature",Medium
+Implement ExceptionFormatter helper,"**Description**
+Create a utility class `ExceptionFormatter` responsible for formatting exception objects to string layouts.
+
+**Acceptance Criteria**
+- Formats standard throwable message and stack trace.
+- Limits trace output line count via configurable option.
+- Sanitizes sensitive class names from class traces.","core, good-first-issue, feature",Easy
+Create ConsoleColorFormatter,"**Description**
+Create a console formatter wrapping log outputs with ANSI escape colors.
+
+**Acceptance Criteria**
+- Red color mapping for `ERROR` and `FATAL`.
+- Yellow color mapping for `WARN`.
+- Blue/Green color mapping for `INFO` and `DEBUG`.
+- White color mapping for `TRACE`.","core, feature",Easy
+Create MemoryAppender for Testing,"**Description**
+Develop a memory appender that collects logged events in an internal array list, intended for test assertions.
+
+**Acceptance Criteria**
+- Holds reference list `List<LogEvent>`.
+- Provides method `clear()` and assertion utility checking log presence.","core, testing, good-first-issue",Easy
+Create Fluent LoggerContext Configuration Builder,"**Description**
+Provide a fluent API builder for configuring core log manager programmatically without external files.
+
+**Acceptance Criteria**
+- Builder chains like: `LoggerContext.builder().level(INFO).appender(consoleAppender).build()`.
+---","core, feature",Easy
+Setup Maven Parent and Spring Boot Server Submodule,"**Description**
+Setup a multi-module Maven build mapping `loglite-core` and parent spring-boot service `loglite-server`.
+
+**Acceptance Criteria**
+- Complete `pom.xml` configuration using standard plugins.
+- `loglite-server` spins up a REST backend using Spring Boot.","server, chore, good-first-issue",Easy
+Compose Docker Configuration for PostgreSQL,"**Description**
+Write a local dev dependency Docker Compose definition for running PostgreSQL database.
+
+**Acceptance Criteria**
+- `docker-compose.yml` configures PG image 16-alpine.
+- Exposes port 5432 and uses dynamic env parameters for credentials.","server, devops, good-first-issue",Easy
+Map LogEntry JPA Entity,"**Description**
+Map standard structured logs to a PostgreSQL database table using Hibernate annotation mapping.
+
+**Acceptance Criteria**
+- Entity attributes: `id` (UUID), `timestamp` (Instant), `loggerName`, `level`, `message`, `threadName`, `metadata` (JSONB).","server, database, feature",Easy
+Log Ingestion REST Endpoint,"**Description**
+Implement a POST controller endpoint receiving standard JSON single log logs at `/api/v1/logs`.
+
+**Acceptance Criteria**
+- Accepts JSON payload representing single `LogEvent`.
+- Returns HTTP status `201 Created` upon successful write.","server, api, feature",Easy
+Bulk Log Ingestion REST Endpoint,"**Description**
+Implement bulk logger insertion controller accepting a payload list at POST `/api/v1/logs/bulk`.
+
+**Acceptance Criteria**
+- Receives Array of `LogEvent`.
+- Processes batch transactional writes, returning count and status in response.","server, api, feature",Easy
+Setup Flyway Database Migration scripts,"**Description**
+Initialize database migration files utilizing Flyway/Liquibase to build postgres schemas cleanly.
+
+**Acceptance Criteria**
+- Script creates `log_entries` table mapping entity columns.
+- Setup rollback and test schema initialization.","server, database, feature",Easy
+Configure JSONB MDC mapping in Hibernate,"**Description**
+Configure Hibernate attributes mapper to translate MDC string Maps to PostgreSQL JSONB format.
+
+**Acceptance Criteria**
+- Converts java `Map<String, String>` directly into JSON string column representation.
+- Metadata keys are queryable on the database using native operators.","server, database, feature",Medium
+Enable Virtual Threads for Spring MVC Server Ingestion,"**Description**
+Configure Embedded Tomcat thread pool configurations in Spring Boot backend to leverage virtual threads.
+
+**Acceptance Criteria**
+- `spring.threads.virtual.enabled` set to `true`.
+- Log ingestion routes execute inside modern virtual thread contexts.","server, performance",Easy
+Buffer Ingest Logs inside memory queue with Batch Writer,"**Description**
+Implement write buffering mechanism collecting incoming log entries and executing batch statements.
+
+**Acceptance Criteria**
+- Flush queue to database when size matches 500 or timeout matches 1 second.
+- Gracefully flush residual queue data upon Spring Application shutdown.","server, performance, feature",Medium
+Add Database migration indexing for Log levels,"**Description**
+Generate schema migration indexing the level column in postgres logs table for optimization queries.
+
+**Acceptance Criteria**
+- Index named `idx_log_entries_level` created in Flyway/Liquibase schema.","server, database, good-first-issue",Easy
+Add Database migration indexing for Log Timestamp,"**Description**
+Create schema migration index targetting timestamp descending sorting queries.
+
+**Acceptance Criteria**
+- Index named `idx_log_entries_timestamp` created sorting values in DESC direction.","server, database, good-first-issue",Easy
+Add Generalized Inverted Index (GIN) on MDC metadata,"**Description**
+Create database GIN index targeting postgres JSONB column to optimize metadata queries.
+
+**Acceptance Criteria**
+- Index named `idx_log_entries_metadata_gin` created using JSONB path indexing.","server, database, feature",Medium
+Fetch log counts grouped by level,"**Description**
+Implement backend route GET `/api/v1/logs/stats/levels` returning count counts grouped by log level.
+
+**Acceptance Criteria**
+- Query executed via dynamic Spring Data projection or JPA grouping.
+- Return JSON format: `{""INFO"": 200, ""WARN"": 40}`.","server, api, feature",Easy
+Log Cleanup Cron Job,"**Description**
+Implement a periodic Spring Scheduler clean job deleting logs older than configured retention policies.
+
+**Acceptance Criteria**
+- Scheduled function reads property `loglite.retention.days`.
+- Logs database queries are purged using bulk delete execution.","server, feature",Easy
+Basic Log Ingest API Key validation,"**Description**
+Secure ingestion REST endpoints using api key HTTP Header checks.
+
+**Acceptance Criteria**
+- Filter intercepting `/api/v1/logs/**` requests.
+- Rejects with `401 Unauthorized` status code if missing headers.
+---","server, security, feature",Easy
+Implement Spring Data Log Repository,"**Description**
+Create core repository class handling SQL query capabilities on log table model representation.
+
+**Acceptance Criteria**
+- Create interface `LogRepository` extending standard `JpaRepository` and `JpaSpecificationExecutor`.","server, database, good-first-issue",Easy
+Filter logs by time range,"**Description**
+Implement time filters parsing start and end instant strings on the log queries endpoint.
+
+**Acceptance Criteria**
+- GET `/api/v1/logs?from=...&to=...` processes request filters.
+- Defaults query ranges when date bounds are omitted.","server, api, feature",Easy
+Filter logs by Logger Category Name,"**Description**
+Allow user searches filtering entries using exact or starts-with queries on Logger Category names.
+
+**Acceptance Criteria**
+- Add query param `logger` to REST endpoints.
+- Supports comma-separated multiple categories.","server, api, good-first-issue",Easy
+Dynamic Query Specification Builder,"**Description**
+Create dynamic JPA dynamic specification builder compiling dynamic criteria models cleanly.
+
+**Acceptance Criteria**
+- Generates Hibernate search queries from level, timestamp, metadata parameters.","server, feature",Medium
+Query Metadata JSONB Keys,"**Description**
+Allow searching log records by matching attributes buried inside the metadata JSONB column.
+
+**Acceptance Criteria**
+- Query syntax like: `/api/v1/logs?metadata.userId=123`.
+- Generates JSONB containment criteria SQL output.","server, database, feature",Medium
+Query Sorting API,"**Description**
+Provide parameter sorting support on log retrieval searches API.
+
+**Acceptance Criteria**
+- Parameters: `sortBy` (timestamp, level) and `sortOrder` (asc, desc).
+- Defaults sorting to timestamp DESC.","server, api, good-first-issue",Easy
+Add pagination controls to Query API,"**Description**
+Implement pagination to avoid overflowing REST response payloads.
+
+**Acceptance Criteria**
+- Query parameters: `page` (default 0), `size` (default 50).
+- Response wraps payloads in paging context objects containing count, total, page number.","server, api, feature",Easy
+Filter Logs by string occurrences,"**Description**
+Add simple query parameters matching logs search term regex or substring logs.
+
+**Acceptance Criteria**
+- Query parameter `search` triggers SQL query `LIKE` or database regex matches.","server, api, feature",Easy
+Timeline stats grouping logs over interval,"**Description**
+Create dashboard analytic aggregation endpoint GET `/api/v1/logs/stats/timeline` showing counts grouped by time frame.
+
+**Acceptance Criteria**
+- Group logs inside database hourly or minutely bucket aggregates.
+- Output formats JSON mapping counts grouped in time range buckets.","server, api, feature",Medium
+Retrieve distinct Service Names,"**Description**
+Implement a simple GET API returning all service identifiers collected in log history tables.
+
+**Acceptance Criteria**
+- Route `/api/v1/logs/services` retrieves unique names found in logs table database fields.","server, api, good-first-issue",Easy
+Query correlation logs by transaction id,"**Description**
+Retrieve log lines matching a specific correlation trace identifier metadata property value.
+
+**Acceptance Criteria**
+- GET `/api/v1/logs/trace/{traceId}` retrieves all logs mapped with correlation token trace id.","server, api, good-first-issue",Easy
+Filter logs holding exception structures,"**Description**
+Create search flags fetching logs mapping throwables or containing string stacks.
+
+**Acceptance Criteria**
+- Flag `/api/v1/logs?hasException=true` isolates lines containing runtime exception details.","server, api, feature",Easy
+Create SQL Console runner endpoint,"**Description**
+Provide read-only search capabilities writing SQL directly over aggregated log databases.
+
+**Acceptance Criteria**
+- POST `/api/v1/logs/query-sql` runs secure select-only custom statements.
+- Blocks updates, drops, or alters syntax explicitly.","server, security, feature",Medium
+CSV Export Log Route,"**Description**
+Add logs query exporter streaming results as dynamic CSV attachments.
+
+**Acceptance Criteria**
+- GET `/api/v1/logs/export/csv` generates response header attachments.
+- Streams rows directly using low-memory footprint builders.","server, api, feature",Easy
+Setup OpenAPI Documentation using SpringDoc,"**Description**
+Configure automatic swagger endpoints capturing controller schema mappings.
+
+**Acceptance Criteria**
+- Exposes interactive OpenAPI document viewer at `/swagger-ui.html`.
+---","server, chore, good-first-issue",Easy
+Bootstrap CLI project module utilizing Picocli,"**Description**
+Initialize the `loglite-cli` Java Maven project module and bundle standard cli dependencies.
+
+**Acceptance Criteria**
+- Maven POM compiles CLI outputs using Picocli plugins.
+- Setup base target run jar configuration.","cli, chore, good-first-issue",Easy
+Define Main Loglite CLI Commands Class,"**Description**
+Set main execution entrypoint classes providing details on flags.
+
+**Acceptance Criteria**
+- Outputs system version details on `--version` CLI call.
+- Formats help text detailing subcommands on `--help`.","cli, good-first-issue",Easy
+Local API Connection Configuration Command,"**Description**
+Create configuration manager saving target log backend variables to home user folders.
+
+**Acceptance Criteria**
+- Command `loglite-cli config --url=... --key=...` saves key-values to a local file.
+- Config directory points to user environment home file `.loglite.json`.","cli, feature",Easy
+Retrieve remote logs from CLI,"**Description**
+Write client command connecting server endpoints and retrieving events data stream.
+
+**Acceptance Criteria**
+- Subcommand `query` prints received logs to standard output.
+- Incorporates configuration parameters saved under user profile files.","cli, feature",Easy
+Relative Date Parsing in CLI Query Bounds,"**Description**
+Build relative date parser interpreting flags `--from 2h` or `--to 1d` into valid UTC date strings.
+
+**Acceptance Criteria**
+- Converts string duration syntaxes correctly.
+- Returns client validation errors on invalid date-range expressions.","cli, feature",Medium
+CLI Level Filtering Argument,"**Description**
+Bind argument parameters filtering log streams by severity options from CLI command line parameters.
+
+**Acceptance Criteria**
+- Flag `--level ERROR,WARN` restricts fetched logs to matching arguments.","cli, good-first-issue",Easy
+Regular Expression match filtering on CLI,"**Description**
+Expose regex parameters query argument options in terminal searches.
+
+**Acceptance Criteria**
+- Subcommand flag `--search "".*NullPointer.*""` maps match arguments on requests.","cli, feature",Easy
+Metadata JSON search criteria option on CLI,"**Description**
+Allow filtering queried server records using custom metadata identifiers.
+
+**Acceptance Criteria**
+- CLI argument syntax `--meta tenantId=alpha` builds valid log criteria filters.","cli, feature",Easy
+Limit search pagination CLI configurations,"**Description**
+Implement limit and offset command args supporting search ranges on query calls.
+
+**Acceptance Criteria**
+- Subcommand supports flags `--limit` and `--offset`.
+- Rejects invalid pagination indices.","cli, good-first-issue",Easy
+Validate connection server credentials via CLI Ping command,"**Description**
+Add `ping` CLI command verifying API tokens and reporting health response properties.
+
+**Acceptance Criteria**
+- Connects to loglite-server metadata routes.
+- Outputs message if successful.","cli, good-first-issue",Easy
+Read Local Log files parsing format representations,"**Description**
+Create file parse pipeline unpacking structured file layouts locally.
+
+**Acceptance Criteria**
+- Subcommand `parse --file /path/to/log.json` outputs parsed records.","cli, feature",Easy
+Filter local text files from CLI,"**Description**
+Enable client query commands searching records directly inside local paths.
+
+**Acceptance Criteria**
+- Subcommand execution: `parse --file /path/log.json --level WARN`.
+- Performs in-memory matching of lines.","cli, feature",Easy
+Profiles command CLI controller,"**Description**
+Allow configuration commands editing server config profiles mapping local development environments.
+
+**Acceptance Criteria**
+- Commands `profile list`, `profile add`, `profile use` store context references.","cli, feature",Easy
+Format export to CSV via CLI redirection,"**Description**
+Print queried logs directly formatted inside CSV formats to output redirect pipelines.
+
+**Acceptance Criteria**
+- Command: `query --csv` outputs standard structured CSV layout mapping values.","cli, feature",Easy
+Upload Local logs batch processing CLI tool,"**Description**
+Implement client commands reading raw JSON text logs and routing to ingestion endpoint.
+
+**Acceptance Criteria**
+- Execution reads local log file path and imports to `loglite-server` in chunks of 100.
+---","cli, feature",Medium
+Pretty Print output formatting command,"**Description**
+Transform structured backend response formats into neat terminal layouts.
+
+**Acceptance Criteria**
+- Output formats line records cleanly: `[LEVEL] HH:mm:ss [Logger] Message`.
+- Exception stack traces are tabbed nested beneath line items.","cli, feature",Easy
+Add ANSI color formatting to pretty logs CLI,"**Description**
+Use ANSI terminal escape strings colorizing levels differently in console outputs.
+
+**Acceptance Criteria**
+- Visual output maps red to `ERROR`, yellow to `WARN`, green to `INFO`.","cli, good-first-issue, feature",Easy
+Color disable switch command option,"**Description**
+Introduce terminal formatting option toggling ANSI highlights.
+
+**Acceptance Criteria**
+- Parameter `--no-color` outputs clean raw plain text files.","cli, good-first-issue",Easy
+Poll for updates using remote tail command,"**Description**
+Build live log streams utilizing continuous background timer queries.
+
+**Acceptance Criteria**
+- Command: `query --tail` queries API at defined intervals.
+- Renders only log events published since previous check.","cli, feature",Medium
+Connect to server using SSE streams,"**Description**
+Implement Server Sent Events inside CLI commands connecting streaming routes.
+
+**Acceptance Criteria**
+- Command: `query --live` connects stream channels.
+- Updates render logs immediately as logs are pushed.","cli, feature",Medium
+CLI Pager interaction,"**Description**
+Configure paging utilities matching CLI query returns to standard terminal paged outputs.
+
+**Acceptance Criteria**
+- Interacts with local CLI tools (e.g. `less` on Linux/OSX, `more` on Windows).
+- Falls back to simple chunk logs when system commands are missing.","cli, feature",Medium
+Highlighting Query searches on Command Line Output,"**Description**
+Highlight search target matches with yellow colors inside terminal log messages.
+
+**Acceptance Criteria**
+- Matches queries inside lines and dynamically embeds styling around key bounds.","cli, feature",Easy
+Output results as clean JSON representations,"**Description**
+Support CLI flags mapping response records directly to JSON string outputs.
+
+**Acceptance Criteria**
+- Command: `query --format json` prints raw JSON arrays.","cli, good-first-issue",Easy
+Export parsed markdown summaries from terminal queries,"**Description**
+Support dumping query output layouts as formatted Markdown tables.
+
+**Acceptance Criteria**
+- Option `--format md` outputs correct markdown headers and alignments.","cli, feature",Easy
+Implement local Log file watcher,"**Description**
+Create file observer loop capturing additions on local server paths using Java NIO package functions.
+
+**Acceptance Criteria**
+- CLI `watch --file /path/to/log.txt` listens for changes and writes new lines.","cli, feature",Medium
+Terminal Text Progress bars of active severities,"**Description**
+Build ASCII stats outputs counting records ratios within selected intervals.
+
+**Acceptance Criteria**
+- Commands `stats --levels` outputs text based visual graphs (e.g. `ERROR [===       ] 30%`).","cli, feature",Easy
+CLI Selectable Output Columns Argument,"**Description**
+Allow user control over which fields to display in CLI tabular formatting.
+
+**Acceptance Criteria**
+- Flag `--columns time,level,msg` dynamically hides unspecified fields.","cli, feature",Easy
+CLI Startup Setup Wizard,"**Description**
+Launch interactive prompts prompting connection URL details if configs are absent.
+
+**Acceptance Criteria**
+- Interactive console queries user inputs, validating before saving credentials.","cli, good-first-issue",Easy
+Message Truncation switches,"**Description**
+Introduce parameters limiting message length to fit lines in compact terminal grids.
+
+**Acceptance Criteria**
+- Flag `--truncate 80` truncates log descriptions, appending ellipsis.","cli, good-first-issue",Easy
+Auto generate CLI command shells completions,"**Description**
+Use Picocli tooling pipelines exporting dynamic autocomplete file definitions.
+
+**Acceptance Criteria**
+- Export scripts supporting autocomplete on bash and zsh commands.
+---","cli, chore",Easy
+Create SLF4J 2.x Binding Provider,"**Description**
+Develop `loglite-slf4j` provider mapping SLF4J logs into Loglite events.
+
+**Acceptance Criteria**
+- Implement `org.slf4j.spi.SLF4JServiceProvider`.
+- Delegates log calls from standard logging framework calls to `loglite-core` structures.","integration, feature",Medium
+Develop Spring Boot Starter configuration module,"**Description**
+Create starter project resolving properties and auto-configuring log forwarding beans.
+
+**Acceptance Criteria**
+- Auto-configure properties utilizing annotations mapping `loglite` target configs.","integration, feature",Easy
+Implement Logback client Appender forwarding logs to HTTP Server,"**Description**
+Write Logback Appender translating Logback records and submitting them to HTTP REST server.
+
+**Acceptance Criteria**
+- Inherits from standard Logback `AppenderBase<ILoggingEvent>`.
+- Non-blocking client posting JSON batches.","integration, feature",Medium
+Standard Java HTTP Servlet log Interceptor Filter,"**Description**
+Build web servlet component tracing inbound request metadata and execution performance times.
+
+**Acceptance Criteria**
+- Captures methods, URIs, response codes, durations, logging summaries automatically.","integration, feature",Easy
+Spring Security authentication correlation log adapter,"**Description**
+Bind logged security usernames context attributes automatically into active MDC contexts.
+
+**Acceptance Criteria**
+- Extracts principal names from security context holder, updates local MDC keys.","integration, feature",Easy
+Ensure Thread Safe implementations of Loggers,"**Description**
+Verify multi-threaded operations do not corrupt state during logger execution.
+
+**Acceptance Criteria**
+- Concurrent lock structures check buffer operations in core appenders.","core, concurrency",Easy
+Implement Spring Boot Aggregator Health Indicators,"**Description**
+Build custom health indicators verifying storage and backend availability.
+
+**Acceptance Criteria**
+- Class implements Spring Boot `HealthIndicator` checking database connections.","server, feature",Easy
+Forward MDC Correlation IDs across Microservices using HTTP headers,"**Description**
+Write Http Client interceptors parsing MDC context keys and setting tracing Headers.
+
+**Acceptance Criteria**
+- Maps trace headers like `X-Correlation-ID` dynamically during outgoing requests.","integration, feature",Easy
+Docker log reader deployment utility,"**Description**
+Write shell script piping docker daemon output formats to server REST endpoints.
+
+**Acceptance Criteria**
+- Script loops output logs piping commands to `loglite-cli upload`.","devops, good-first-issue",Easy
+Kubernetes daemonset collector config template,"**Description**
+Compose sample K8s specifications deploying sidecars shipping logs to servers.
+
+**Acceptance Criteria**
+- Manifest outlines setup variables capturing directory maps.","devops, good-first-issue",Easy
+Java JDK 11 HttpClient logs middleware,"**Description**
+Implement custom interceptor tracking execution metrics in standard JDK clients.
+
+**Acceptance Criteria**
+- Interceptor records URI targets, response statuses, request execution periods.","integration, feature",Easy
+Setup gRPC service logging schema endpoint,"**Description**
+Introduce gRPC collection definitions alongside processing server handlers.
+
+**Acceptance Criteria**
+- Proto definitions layout schema structure, server consumes high-throughput payloads.","server, api, feature",Medium
+Ingestion rate-limit filtering configs,"**Description**
+Introduce rate limiting guards restricting endpoints from high traffic volumes.
+
+**Acceptance Criteria**
+- Rejects callers exceeding bounds using Bucket4j filter logic.","server, security, feature",Medium
+Webflux Netty non-blocking log collection routing,"**Description**
+Develop high-throughput reactive route alternatives using Webflux handlers.
+
+**Acceptance Criteria**
+- REST route ingest options leverage reactive backpressures.","server, performance, feature",Medium
+Thread Pool Context Propagation wrapper,"**Description**
+Build executor wrappers preserving MDC maps on threaded task executions.
+
+**Acceptance Criteria**
+- Wrapped runners copy active thread contexts before submitting processes.
+---","core, concurrency",Easy
+Build Maven Root configurations linking submodules,"**Description**
+Setup root configuration file defining modules and maven compile steps.
+
+**Acceptance Criteria**
+- Root `pom.xml` links core, server, and CLI subprojects.","build, good-first-issue",Easy
+Configure Postgres Testcontainers in Integration testing,"**Description**
+Setup test environments utilizing dynamic containers for verification databases.
+
+**Acceptance Criteria**
+- Integration testing loads Postgres container instances automatically.","testing, good-first-issue",Easy
+Setup core layout JUnit test cases,"**Description**
+Write test validations checking layouts serialize values consistently.
+
+**Acceptance Criteria**
+- Assert core log outputs generate exact JSON structures.","testing, good-first-issue",Easy
+Test ingestion APIs with WebMvc tests,"**Description**
+Create mock MVC assertions validating routing logic in log servers.
+
+**Acceptance Criteria**
+- Validates request payloads formats, response messages code codes.","testing, good-first-issue",Easy
+Verify CLI commands argument validators,"**Description**
+Write test cases checking Picocli command arguments and output flags.
+
+**Acceptance Criteria**
+- Test suites capture stdout / stderr streams testing commands.","testing, good-first-issue",Easy
+Configure CI Pipeline workflows inside GitHub Actions,"**Description**
+Create automation scripts verifying commits build and tests pass.
+
+**Acceptance Criteria**
+- CI pipeline configuration file maps test executions on push.","devops, good-first-issue",Easy
+Checkstyle XML validation setups,"**Description**
+Establish code syntax guidelines using Checkstyle plugins.
+
+**Acceptance Criteria**
+- Builds return compilation failures when coding check violations occur.","build, good-first-issue",Easy
+Ingestion route performance benchmarks script,"**Description**
+Compose simple load-testing setup evaluating REST ingestion routes.
+
+**Acceptance Criteria**
+- Scripts execute load testing reports highlighting throughput limits.",devops,Medium
+Release profiles configuration,"**Description**
+Map maven release configurations for deploying artifacts to repositories.
+
+**Acceptance Criteria**
+- Profile signs files, builds javadoc/sources attachments.",build,Easy
+Build API Javadoc documents,"**Description**
+Run and generate comprehensive library Javadoc outputs across core files.
+
+**Acceptance Criteria**
+- Resolve compiler documentation warning reports.","documentation, good-first-issue",Easy
+Write core README project details,"**Description**
+Compose project main instructions detailing build sequences and tools.
+
+**Acceptance Criteria**
+- Explains components, running locally via Docker, using CLI commands.","documentation, good-first-issue",Easy
+Write project Quickstart documentation guide,"**Description**
+Outline introductory instructions to configure and stream logging.
+
+**Acceptance Criteria**
+- Step-by-step tutorial importing logger binding libraries.","documentation, good-first-issue",Easy
+Catalog CLI command options references,"**Description**
+Write detailed documentation enumerating command arguments and output formats.
+
+**Acceptance Criteria**
+- Formats commands list showing flags options.","documentation, good-first-issue",Easy
+Setup Jacoco Coverage constraints check,"**Description**
+Bind execution plugins checking test coverage metrics during build steps.
+
+**Acceptance Criteria**
+- Compilations return errors if test coverages fall below defined metrics.","build, good-first-issue",Easy
+Maven Enforcer Dependency Convergence validation,"**Description**
+Verify version configurations do not conflict inside active dependencies lists.
+
+**Acceptance Criteria**
+- Maven builds reject duplicate imports with different versions.",build,Easy
