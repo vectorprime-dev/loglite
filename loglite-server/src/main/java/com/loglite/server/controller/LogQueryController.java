@@ -1,9 +1,12 @@
 package com.loglite.server.controller;
 
 import com.loglite.core.LogLevel;
+import com.loglite.server.dto.PagedResponse;
 import com.loglite.server.entity.LogEntry;
 import com.loglite.server.repository.LogEntryRepository;
 import com.loglite.server.repository.LogEntrySpecifications;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,13 +37,15 @@ public class LogQueryController {
     }
 
     @GetMapping
-    public List<LogEntry> query(
+    public PagedResponse<LogEntry> query(
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String logger,
             @RequestParam(required = false) List<LogLevel> level,
             @RequestParam(required = false, defaultValue = DEFAULT_SORT_BY) String sortBy,
             @RequestParam(required = false, defaultValue = "DESC") Sort.Direction sortOrder,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "50") int size,
             @RequestParam Map<String, String> allParams) {
 
         Instant effectiveTo = to != null ? to : Instant.now();
@@ -64,7 +69,9 @@ public class LogQueryController {
 
         String sortProperty = "level".equals(sortBy) ? "level" : DEFAULT_SORT_BY;
         Sort sort = Sort.by(sortOrder, sortProperty);
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
 
-        return repository.findAll(spec, sort);
+        Page<LogEntry> result = repository.findAll(spec, pageRequest);
+        return PagedResponse.from(result);
     }
 }
