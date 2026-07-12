@@ -1,5 +1,6 @@
 package com.loglite.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,5 +40,35 @@ public final class LoggerContext {
      */
     public void addAppender(Appender appender) {
         appenders.add(appender);
+    }
+
+    /**
+     * @return a new {@link Builder} for configuring a standalone LoggerContext instance
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Fluent builder for constructing independently configured {@link LoggerContext} instances,
+     * e.g. {@code LoggerContext.builder().level(INFO).appender(consoleAppender).build()}.
+     */
+    public static final class Builder {
+        private LogLevel level = LogLevel.INFO;
+        private final List<Appender> appenders = new ArrayList<>();
+
+        public Builder level(LogLevel level) {
+            this.level = level;
+            return this;
+        }
+
+        public Builder appender(Appender appender) {
+            this.appenders.add(appender);
+            return this;
+        }
+
+        public LoggerContext build() {
+            return new LoggerContext(level, appenders);
+        }
     }
 }
