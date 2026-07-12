@@ -42,6 +42,7 @@ public class LogQueryController {
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String logger,
             @RequestParam(required = false) List<LogLevel> level,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = DEFAULT_SORT_BY) String sortBy,
             @RequestParam(required = false, defaultValue = "DESC") Sort.Direction sortOrder,
             @RequestParam(required = false, defaultValue = "0") int page,
@@ -58,6 +59,9 @@ public class LogQueryController {
         }
         if (level != null && !level.isEmpty()) {
             spec = spec.and(LogEntrySpecifications.levelIn(level));
+        }
+        if (search != null && !search.isBlank()) {
+            spec = spec.and(LogEntrySpecifications.messageContains(search));
         }
 
         for (Map.Entry<String, String> param : allParams.entrySet()) {
