@@ -3,9 +3,11 @@ package com.loglite.server.repository;
 import com.loglite.core.LogLevel;
 import com.loglite.server.entity.LogEntry;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,4 +35,13 @@ public interface LogEntryRepository extends JpaRepository<LogEntry, UUID> {
 
         long getCount();
     }
+
+    /**
+     * Bulk-deletes entries older than the given cutoff, for retention cleanup.
+     *
+     * @return the number of rows deleted
+     */
+    @Modifying
+    @Query("DELETE FROM LogEntry le WHERE le.timestamp < :cutoff")
+    int deleteByTimestampBefore(@Param("cutoff") Instant cutoff);
 }
