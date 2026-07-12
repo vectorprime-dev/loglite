@@ -3,6 +3,7 @@ package com.loglite.server.repository;
 import com.loglite.core.LogLevel;
 import com.loglite.server.entity.LogEntry;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,9 +13,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Repository for persisting and retrieving {@link LogEntry} records.
+ * Repository for persisting and retrieving {@link LogEntry} records. Extends
+ * {@link JpaSpecificationExecutor} to support dynamic, criteria-based queries
+ * (filtering, sorting, pagination) built from {@link org.springframework.data.jpa.domain.Specification}s.
  */
-public interface LogEntryRepository extends JpaRepository<LogEntry, UUID> {
+public interface LogEntryRepository extends JpaRepository<LogEntry, UUID>, JpaSpecificationExecutor<LogEntry> {
 
     /**
      * Finds entries whose metadata JSONB column contains the given key/value pair,
