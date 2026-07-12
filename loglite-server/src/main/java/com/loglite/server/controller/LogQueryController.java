@@ -4,6 +4,7 @@ import com.loglite.core.LogLevel;
 import com.loglite.server.entity.LogEntry;
 import com.loglite.server.repository.LogEntryRepository;
 import com.loglite.server.repository.LogEntrySpecifications;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +25,7 @@ public class LogQueryController {
 
     private static final long DEFAULT_WINDOW_HOURS = 24;
     private static final String METADATA_PARAM_PREFIX = "metadata.";
+    private static final String DEFAULT_SORT_BY = "timestamp";
 
     private final LogEntryRepository repository;
 
@@ -37,6 +39,8 @@ public class LogQueryController {
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String logger,
             @RequestParam(required = false) List<LogLevel> level,
+            @RequestParam(required = false, defaultValue = DEFAULT_SORT_BY) String sortBy,
+            @RequestParam(required = false, defaultValue = "DESC") Sort.Direction sortOrder,
             @RequestParam Map<String, String> allParams) {
 
         Instant effectiveTo = to != null ? to : Instant.now();
@@ -58,6 +62,9 @@ public class LogQueryController {
             }
         }
 
-        return repository.findAll(spec);
+        String sortProperty = "level".equals(sortBy) ? "level" : DEFAULT_SORT_BY;
+        Sort sort = Sort.by(sortOrder, sortProperty);
+
+        return repository.findAll(spec, sort);
     }
 }
