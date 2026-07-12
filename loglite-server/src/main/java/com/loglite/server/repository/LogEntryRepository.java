@@ -47,4 +47,14 @@ public interface LogEntryRepository extends JpaRepository<LogEntry, UUID>, JpaSp
     @Modifying
     @Query("DELETE FROM LogEntry le WHERE le.timestamp < :cutoff")
     int deleteByTimestampBefore(@Param("cutoff") Instant cutoff);
+
+    /**
+     * Groups entry counts into time buckets (e.g. {@code 'hour'} or {@code 'minute'})
+     * using Postgres' {@code date_trunc} function.
+     *
+     * @return rows of {@code [bucketStart (Timestamp), count (Number)]}
+     */
+    @Query(value = "SELECT date_trunc(:bucket, timestamp) AS bucket_start, COUNT(*) AS entry_count "
+            + "FROM log_entries GROUP BY bucket_start ORDER BY bucket_start", nativeQuery = true)
+    List<Object[]> countGroupedByTimeBucket(@Param("bucket") String bucket);
 }
