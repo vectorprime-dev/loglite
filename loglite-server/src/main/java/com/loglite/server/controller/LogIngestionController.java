@@ -3,6 +3,7 @@ package com.loglite.server.controller;
 import com.loglite.server.dto.BulkIngestResponse;
 import com.loglite.server.dto.LogIngestRequest;
 import com.loglite.server.entity.LogEntry;
+import com.loglite.server.ingest.LogBatchWriter;
 import com.loglite.server.repository.LogEntryRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,15 +25,18 @@ import java.util.UUID;
 public class LogIngestionController {
 
     private final LogEntryRepository repository;
+    private final LogBatchWriter batchWriter;
 
-    public LogIngestionController(LogEntryRepository repository) {
+    public LogIngestionController(LogEntryRepository repository, LogBatchWriter batchWriter) {
         this.repository = repository;
+        this.batchWriter = batchWriter;
     }
 
     @PostMapping
     public ResponseEntity<LogEntry> ingest(@RequestBody LogIngestRequest request) {
-        LogEntry saved = repository.save(toEntry(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        LogEntry entry = toEntry(request);
+        batchWriter.submit(entry);
+        return ResponseEntity.status(HttpStatus.CREATED).body(entry);
     }
 
     @PostMapping("/bulk")
