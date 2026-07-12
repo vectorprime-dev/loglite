@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Query endpoint for retrieving ingested log entries.
@@ -23,6 +23,7 @@ import java.util.List;
 public class LogQueryController {
 
     private static final long DEFAULT_WINDOW_HOURS = 24;
+    private static final String METADATA_PARAM_PREFIX = "metadata.";
 
     private final LogEntryRepository repository;
 
@@ -35,7 +36,8 @@ public class LogQueryController {
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) String logger,
-            @RequestParam(required = false) List<LogLevel> level) {
+            @RequestParam(required = false) List<LogLevel> level,
+            @RequestParam Map<String, String> allParams) {
 
         Instant effectiveTo = to != null ? to : Instant.now();
         Instant effectiveFrom = from != null ? from : effectiveTo.minus(DEFAULT_WINDOW_HOURS, ChronoUnit.HOURS);
@@ -47,6 +49,13 @@ public class LogQueryController {
         }
         if (level != null && !level.isEmpty()) {
             spec = spec.and(LogEntrySpecifications.levelIn(level));
+        }
+
+        for (Map.Entry<String, String> param : allParams.entrySet()) {
+            if (param.getKey().startsWith(METADATA_PARAM_PREFIX)) {
+                String metadataKey = param.getKey().substring(METADATA_PARAM_PREFIX.length());
+                spec = spec.and(LogEntrySpecifications.metadataEquals(metadataKey, param.getValue()));
+            }
         }
 
         return repository.findAll(spec);
