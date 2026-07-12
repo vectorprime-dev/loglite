@@ -32,6 +32,7 @@ class LogIngestionControllerTest {
                 Instant.now(), "com.example.Foo", LogLevel.INFO, "hello", "main", Map.of("userId", "42"));
 
         mockMvc.perform(post("/api/v1/logs")
+                        .header("X-API-Key", "changeme")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
