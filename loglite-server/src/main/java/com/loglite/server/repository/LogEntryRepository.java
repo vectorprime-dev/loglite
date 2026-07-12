@@ -1,5 +1,6 @@
 package com.loglite.server.repository;
 
+import com.loglite.core.LogLevel;
 import com.loglite.server.entity.LogEntry;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,4 +20,17 @@ public interface LogEntryRepository extends JpaRepository<LogEntry, UUID> {
      */
     @Query(value = "SELECT * FROM log_entries WHERE metadata ->> :key = :value", nativeQuery = true)
     List<LogEntry> findByMetadataKeyValue(@Param("key") String key, @Param("value") String value);
+
+    /**
+     * @return the number of entries recorded at each log level
+     */
+    @Query("SELECT le.level as level, COUNT(le) as count FROM LogEntry le GROUP BY le.level")
+    List<LevelCount> countGroupedByLevel();
+
+    /** Projection for {@link #countGroupedByLevel()}. */
+    interface LevelCount {
+        LogLevel getLevel();
+
+        long getCount();
+    }
 }
