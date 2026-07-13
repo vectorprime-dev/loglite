@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +30,7 @@ public class LogQueryController {
     private static final long DEFAULT_WINDOW_HOURS = 24;
     private static final String METADATA_PARAM_PREFIX = "metadata.";
     private static final String DEFAULT_SORT_BY = "timestamp";
+    private static final String TRACE_ID_METADATA_KEY = "traceId";
 
     private final LogEntryRepository repository;
 
@@ -85,5 +87,14 @@ public class LogQueryController {
     @GetMapping("/services")
     public List<String> services() {
         return repository.findDistinctLoggerNames();
+    }
+
+    /**
+     * @param traceId the correlation/trace id to match against each entry's metadata
+     * @return all log entries whose metadata carries this trace id
+     */
+    @GetMapping("/trace/{traceId}")
+    public List<LogEntry> byTraceId(@PathVariable String traceId) {
+        return repository.findByMetadataKeyValue(TRACE_ID_METADATA_KEY, traceId);
     }
 }
