@@ -54,7 +54,7 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--truncate", description = "Maximum message length before truncating with an ellipsis")
     private Integer truncate;
 
-    @Option(names = "--format", defaultValue = "pretty", description = "Output format: pretty, json")
+    @Option(names = "--format", defaultValue = "pretty", description = "Output format: pretty, json, csv")
     private String format;
 
     @Override
@@ -92,6 +92,10 @@ public class QueryCommand implements Callable<Integer> {
 
         if ("json".equalsIgnoreCase(format)) {
             System.out.println(JsonSupport.MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(filtered));
+            return 0;
+        }
+        if ("csv".equalsIgnoreCase(format)) {
+            System.out.print(com.loglite.cli.output.CsvFormatter.format(filtered));
             return 0;
         }
 
