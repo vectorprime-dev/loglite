@@ -48,6 +48,9 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--no-color", description = "Disable ANSI color output")
     private boolean noColor;
 
+    @Option(names = "--columns", split = ",", description = "Fields to display: time,level,logger,msg,thread")
+    private java.util.List<String> columns;
+
     @Override
     public Integer call() throws Exception {
         if (limit <= 0) {
@@ -83,7 +86,7 @@ public class QueryCommand implements Callable<Integer> {
                 toPrint = new LogEntryDto(entry.id(), entry.timestamp(), entry.loggerName(), entry.level(),
                         highlighted, entry.threadName(), entry.metadata());
             }
-            System.out.println(PrettyFormatter.format(toPrint, !noColor));
+            System.out.println(PrettyFormatter.format(toPrint, !noColor, columns));
         }
         return 0;
     }
