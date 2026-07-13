@@ -54,6 +54,9 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--truncate", description = "Maximum message length before truncating with an ellipsis")
     private Integer truncate;
 
+    @Option(names = "--format", defaultValue = "pretty", description = "Output format: pretty, json")
+    private String format;
+
     @Override
     public Integer call() throws Exception {
         if (limit <= 0) {
@@ -79,10 +82,20 @@ public class QueryCommand implements Callable<Integer> {
         PagedResponseDto<LogEntryDto> page = JsonSupport.MAPPER.readValue(response.body(), type);
 
         java.util.regex.Pattern searchPattern = search != null ? java.util.regex.Pattern.compile(search) : null;
+        java.util.List<LogEntryDto> filtered = new java.util.ArrayList<>();
         for (LogEntryDto entry : page.content()) {
             if (searchPattern != null && (entry.message() == null || !searchPattern.matcher(entry.message()).find())) {
                 continue;
             }
+            filtered.add(entry);
+        }
+
+        if ("json".equalsIgnoreCase(format)) {
+            System.out.println(JsonSupport.MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(filtered));
+            return 0;
+        }
+
+        for (LogEntryDto entry : filtered) {
             LogEntryDto toPrint = entry;
             if (truncate != null && toPrint.message() != null) {
                 toPrint = new LogEntryDto(toPrint.id(), toPrint.timestamp(), toPrint.loggerName(), toPrint.level(),
