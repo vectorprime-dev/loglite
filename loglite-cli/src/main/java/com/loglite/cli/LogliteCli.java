@@ -14,7 +14,7 @@ import picocli.CommandLine.Command;
         mixinStandardHelpOptions = true,
         versionProvider = VersionProvider.class,
         description = "Command-line client for querying and uploading Loglite log events.",
-        subcommands = {ConfigCommand.class, ProfilesCommand.class, PingCommand.class, QueryCommand.class, ParseCommand.class})
+        subcommands = {ConfigCommand.class, ProfilesCommand.class, PingCommand.class, QueryCommand.class, ParseCommand.class, WatchCommand.class})
 public class LogliteCli implements Runnable {
 
     @Override
