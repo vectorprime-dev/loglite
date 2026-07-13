@@ -66,6 +66,9 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--tail-interval", defaultValue = "2", description = "Seconds between polls when using --tail")
     private int tailIntervalSeconds;
 
+    @Option(names = "--live", description = "Connect to the server's log stream (Server-Sent Events) and print events as they arrive")
+    private boolean live;
+
     @Override
     public Integer call() throws Exception {
         if (limit <= 0) {
@@ -80,12 +83,47 @@ public class QueryCommand implements Callable<Integer> {
         CliConfig config = ConfigStore.load();
         LogliteApiClient client = new LogliteApiClient(config.getActive());
 
+        if (live) {
+            return runLive(client);
+        }
         if (tail) {
             return runTail(client);
         }
 
         java.util.List<LogEntryDto> filtered = fetchAndFilter(client, buildPath());
         return render(filtered);
+    }
+
+    private Integer runLive(LogliteApiClient client) throws Exception {
+        java.net.http.HttpRequest request = client.requestBuilder("/api/v1/logs/stream")
+                .header("Accept", "text/event-stream")
+                .GET()
+                .build();
+
+        java.net.http.HttpResponse<java.util.stream.Stream<String>> response =
+                client.rawClient().send(request, java.net.http.HttpResponse.BodyHandlers.ofLines());
+
+        if (response.statusCode() != 200) {
+            System.err.println("Live stream failed: HTTP " + response.statusCode());
+            return 1;
+        }
+
+        response.body().forEach(line -> {
+            if (!line.startsWith("data:")) {
+                return;
+            }
+            String json = line.substring("data:".length()).trim();
+            if (json.isEmpty()) {
+                return;
+            }
+            try {
+                LogEntryDto entry = JsonSupport.MAPPER.readValue(json, LogEntryDto.class);
+                System.out.println(PrettyFormatter.format(entry, !noColor, columns));
+            } catch (Exception e) {
+                System.err.println("Skipping malformed event: " + e.getMessage());
+            }
+        });
+        return 0;
     }
 
     private Integer runTail(LogliteApiClient client) throws Exception {
