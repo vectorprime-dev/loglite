@@ -25,6 +25,7 @@
     <modules>
         <module>loglite-core</module>
         <module>loglite-server</module>
+        <module>loglite-cli</module>
     </modules>
 
     <dependencyManagement>
