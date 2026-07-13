@@ -45,6 +45,7 @@ public class LogQueryController {
             @RequestParam(required = false) String logger,
             @RequestParam(required = false) List<LogLevel> level,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean hasException,
             @RequestParam(required = false, defaultValue = DEFAULT_SORT_BY) String sortBy,
             @RequestParam(required = false, defaultValue = "DESC") Sort.Direction sortOrder,
             @RequestParam(required = false, defaultValue = "0") int page,
@@ -64,6 +65,9 @@ public class LogQueryController {
         }
         if (search != null && !search.isBlank()) {
             spec = spec.and(LogEntrySpecifications.messageContains(search));
+        }
+        if (Boolean.TRUE.equals(hasException)) {
+            spec = spec.and(LogEntrySpecifications.hasException());
         }
 
         for (Map.Entry<String, String> param : allParams.entrySet()) {
