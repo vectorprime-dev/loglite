@@ -9,12 +9,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -83,6 +90,63 @@ public class LogQueryController {
 
         Page<LogEntry> result = repository.findAll(spec, pageRequest);
         return PagedResponse.from(result);
+    }
+
+    /**
+     * Streams matching log entries as a CSV attachment. Accepts the same filter
+     * parameters as {@link #query}, but ignores paging and returns the full result set.
+     */
+    @GetMapping("/export/csv")
+    public ResponseEntity<StreamingResponseBody> exportCsv(
+            @RequestParam(required = false) Instant from,
+            @RequestParam(required = false) Instant to,
+            @RequestParam(required = false) String logger,
+            @RequestParam(required = false) List<LogLevel> level,
+            @RequestParam(required = false) String search) {
+
+        Instant effectiveTo = to != null ? to : Instant.now();
+        Instant effectiveFrom = from != null ? from : effectiveTo.minus(DEFAULT_WINDOW_HOURS, ChronoUnit.HOURS);
+
+        Specification<LogEntry> spec = LogEntrySpecifications.timestampBetween(effectiveFrom, effectiveTo);
+        if (logger != null && !logger.isBlank()) {
+            spec = spec.and(LogEntrySpecifications.loggerNameMatches(logger));
+        }
+        if (level != null && !level.isEmpty()) {
+            spec = spec.and(LogEntrySpecifications.levelIn(level));
+        }
+        if (search != null && !search.isBlank()) {
+            spec = spec.and(LogEntrySpecifications.messageContains(search));
+        }
+
+        Specification<LogEntry> finalSpec = spec;
+        StreamingResponseBody body = (OutputStream out) -> {
+            try (PrintWriter writer = new PrintWriter(new java.io.OutputStreamWriter(out, StandardCharsets.UTF_8))) {
+                writer.println("timestamp,level,logger,thread,message");
+                for (LogEntry entry : repository.findAll(finalSpec)) {
+                    writer.println(String.join(",",
+                            csvField(String.valueOf(entry.getTimestamp())),
+                            csvField(String.valueOf(entry.getLevel())),
+                            csvField(entry.getLoggerName()),
+                            csvField(entry.getThreadName()),
+                            csvField(entry.getMessage())));
+                }
+            }
+        };
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"logs.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(body);
+    }
+
+    private String csvField(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return '"' + value.replace("\"", "\"\"") + '"';
+        }
+        return value;
     }
 
     /**
