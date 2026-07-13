@@ -7,9 +7,14 @@ import com.loglite.cli.config.CliConfig;
 import com.loglite.cli.config.ConfigStore;
 import com.loglite.cli.model.LogEntryDto;
 import com.loglite.cli.model.PagedResponseDto;
+import com.loglite.cli.util.RelativeTimeParser;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
+import java.net.URLEncoder;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.concurrent.Callable;
 
 /**
@@ -18,12 +23,18 @@ import java.util.concurrent.Callable;
 @Command(name = "query", description = "Query logs from the configured server.")
 public class QueryCommand implements Callable<Integer> {
 
+    @Option(names = "--from", description = "Start of the time range: ISO-8601 instant or relative duration (e.g. 2h, 1d)")
+    private String from;
+
+    @Option(names = "--to", description = "End of the time range: ISO-8601 instant or relative duration (e.g. 30m)")
+    private String to;
+
     @Override
     public Integer call() throws Exception {
         CliConfig config = ConfigStore.load();
         LogliteApiClient client = new LogliteApiClient(config.getActive());
 
-        HttpResponse<String> response = client.get("/api/v1/logs");
+        HttpResponse<String> response = client.get(buildPath());
         if (response.statusCode() != 200) {
             System.err.println("Query failed: HTTP " + response.statusCode() + " - " + response.body());
             return 1;
@@ -37,5 +48,29 @@ public class QueryCommand implements Callable<Integer> {
             System.out.println("[" + entry.level() + "] " + entry.timestamp() + " [" + entry.loggerName() + "] " + entry.message());
         }
         return 0;
+    }
+
+    private String buildPath() {
+        StringBuilder path = new StringBuilder("/api/v1/logs");
+        StringBuilder query = new StringBuilder();
+
+        if (from != null) {
+            appendParam(query, "from", RelativeTimeParser.parse(from));
+        }
+        if (to != null) {
+            appendParam(query, "to", RelativeTimeParser.parse(to));
+        }
+
+        if (!query.isEmpty()) {
+            path.append('?').append(query);
+        }
+        return path.toString();
+    }
+
+    private void appendParam(StringBuilder query, String name, Instant value) {
+        if (!query.isEmpty()) {
+            query.append('&');
+        }
+        query.append(name).append('=').append(URLEncoder.encode(value.toString(), StandardCharsets.UTF_8));
     }
 }
