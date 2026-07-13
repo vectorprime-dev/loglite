@@ -27,6 +27,7 @@
         <module>loglite-server</module>
         <module>loglite-cli</module>
         <module>loglite-slf4j</module>
+        <module>loglite-logback-appender</module>
     </modules>
 
     <dependencyManagement>
