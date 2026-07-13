@@ -19,12 +19,18 @@ public class ParseCommand implements Callable<Integer> {
     @Option(names = "--file", required = true, description = "Path to a newline-delimited JSON log file")
     private Path file;
 
+    @Option(names = "--level", split = ",", description = "Restrict results to these levels, e.g. ERROR,WARN")
+    private String[] levels;
+
     @Override
     public Integer call() throws Exception {
         if (!Files.exists(file)) {
             System.err.println("File not found: " + file);
             return 1;
         }
+
+        java.util.Set<String> levelFilter = levels == null ? null
+                : java.util.Arrays.stream(levels).map(l -> l.trim().toUpperCase()).collect(java.util.stream.Collectors.toSet());
 
         List<String> lines = Files.readAllLines(file);
         int parsed = 0;
@@ -33,6 +39,9 @@ public class ParseCommand implements Callable<Integer> {
                 continue;
             }
             LogEntryDto entry = JsonSupport.MAPPER.readValue(line, LogEntryDto.class);
+            if (levelFilter != null && (entry.level() == null || !levelFilter.contains(entry.level().toUpperCase()))) {
+                continue;
+            }
             System.out.println("[" + entry.level() + "] " + entry.timestamp() + " [" + entry.loggerName() + "] " + entry.message());
             parsed++;
         }
