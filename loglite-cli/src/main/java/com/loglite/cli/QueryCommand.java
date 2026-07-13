@@ -38,8 +38,23 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--meta", description = "Metadata filter as key=value, e.g. --meta tenantId=alpha")
     private java.util.Map<String, String> metadata;
 
+    @Option(names = "--limit", defaultValue = "50", description = "Maximum number of results to return")
+    private int limit;
+
+    @Option(names = "--offset", defaultValue = "0", description = "Number of results to skip")
+    private int offset;
+
     @Override
     public Integer call() throws Exception {
+        if (limit <= 0) {
+            System.err.println("--limit must be a positive integer");
+            return 1;
+        }
+        if (offset < 0) {
+            System.err.println("--offset must not be negative");
+            return 1;
+        }
+
         CliConfig config = ConfigStore.load();
         LogliteApiClient client = new LogliteApiClient(config.getActive());
 
@@ -83,6 +98,8 @@ public class QueryCommand implements Callable<Integer> {
                 appendParam(query, "metadata." + entry.getKey(), entry.getValue());
             }
         }
+        appendParam(query, "size", String.valueOf(limit));
+        appendParam(query, "page", String.valueOf(offset / limit));
 
         if (!query.isEmpty()) {
             path.append('?').append(query);
