@@ -32,6 +32,9 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--level", split = ",", description = "Restrict results to these levels, e.g. ERROR,WARN")
     private String[] levels;
 
+    @Option(names = "--search", description = "Regular expression matched against each log message")
+    private String search;
+
     @Override
     public Integer call() throws Exception {
         CliConfig config = ConfigStore.load();
@@ -47,7 +50,11 @@ public class QueryCommand implements Callable<Integer> {
                 .constructParametricType(PagedResponseDto.class, LogEntryDto.class);
         PagedResponseDto<LogEntryDto> page = JsonSupport.MAPPER.readValue(response.body(), type);
 
+        java.util.regex.Pattern searchPattern = search != null ? java.util.regex.Pattern.compile(search) : null;
         for (LogEntryDto entry : page.content()) {
+            if (searchPattern != null && (entry.message() == null || !searchPattern.matcher(entry.message()).find())) {
+                continue;
+            }
             System.out.println("[" + entry.level() + "] " + entry.timestamp() + " [" + entry.loggerName() + "] " + entry.message());
         }
         return 0;
