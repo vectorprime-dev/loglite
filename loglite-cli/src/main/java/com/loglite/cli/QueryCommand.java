@@ -60,6 +60,12 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--pager", description = "Pipe pretty output through the system pager (less/more)")
     private boolean pager;
 
+    @Option(names = "--tail", description = "Poll the server at intervals and print only newly arrived logs")
+    private boolean tail;
+
+    @Option(names = "--tail-interval", defaultValue = "2", description = "Seconds between polls when using --tail")
+    private int tailIntervalSeconds;
+
     @Override
     public Integer call() throws Exception {
         if (limit <= 0) {
@@ -74,10 +80,32 @@ public class QueryCommand implements Callable<Integer> {
         CliConfig config = ConfigStore.load();
         LogliteApiClient client = new LogliteApiClient(config.getActive());
 
-        HttpResponse<String> response = client.get(buildPath());
+        if (tail) {
+            return runTail(client);
+        }
+
+        java.util.List<LogEntryDto> filtered = fetchAndFilter(client, buildPath());
+        return render(filtered);
+    }
+
+    private Integer runTail(LogliteApiClient client) throws Exception {
+        Instant cursor = from != null ? RelativeTimeParser.parse(from) : Instant.now();
+        while (true) {
+            java.util.List<LogEntryDto> newEntries = fetchAndFilter(client, buildPath(cursor));
+            for (LogEntryDto entry : newEntries) {
+                System.out.println(PrettyFormatter.format(entry, !noColor, columns));
+                if (entry.timestamp() != null && entry.timestamp().isAfter(cursor)) {
+                    cursor = entry.timestamp();
+                }
+            }
+            Thread.sleep(Math.max(1, tailIntervalSeconds) * 1000L);
+        }
+    }
+
+    private java.util.List<LogEntryDto> fetchAndFilter(LogliteApiClient client, String path) throws Exception {
+        HttpResponse<String> response = client.get(path);
         if (response.statusCode() != 200) {
-            System.err.println("Query failed: HTTP " + response.statusCode() + " - " + response.body());
-            return 1;
+            throw new IllegalStateException("Query failed: HTTP " + response.statusCode() + " - " + response.body());
         }
 
         JavaType type = JsonSupport.MAPPER.getTypeFactory()
@@ -92,6 +120,11 @@ public class QueryCommand implements Callable<Integer> {
             }
             filtered.add(entry);
         }
+        return filtered;
+    }
+
+    private Integer render(java.util.List<LogEntryDto> filtered) throws Exception {
+        java.util.regex.Pattern searchPattern = search != null ? java.util.regex.Pattern.compile(search) : null;
 
         if ("json".equalsIgnoreCase(format)) {
             System.out.println(JsonSupport.MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(filtered));
@@ -130,11 +163,15 @@ public class QueryCommand implements Callable<Integer> {
     }
 
     private String buildPath() {
+        return buildPath(from != null ? RelativeTimeParser.parse(from) : null);
+    }
+
+    private String buildPath(Instant fromOverride) {
         StringBuilder path = new StringBuilder("/api/v1/logs");
         StringBuilder query = new StringBuilder();
 
-        if (from != null) {
-            appendParam(query, "from", RelativeTimeParser.parse(from));
+        if (fromOverride != null) {
+            appendParam(query, "from", fromOverride);
         }
         if (to != null) {
             appendParam(query, "to", RelativeTimeParser.parse(to));
