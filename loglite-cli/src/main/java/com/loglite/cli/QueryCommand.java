@@ -74,7 +74,7 @@ public class QueryCommand implements Callable<Integer> {
             if (searchPattern != null && (entry.message() == null || !searchPattern.matcher(entry.message()).find())) {
                 continue;
             }
-            System.out.println(PrettyFormatter.format(entry));
+            System.out.println(PrettyFormatter.format(entry, true));
         }
         return 0;
     }
