@@ -45,6 +45,9 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--offset", defaultValue = "0", description = "Number of results to skip")
     private int offset;
 
+    @Option(names = "--no-color", description = "Disable ANSI color output")
+    private boolean noColor;
+
     @Override
     public Integer call() throws Exception {
         if (limit <= 0) {
@@ -74,7 +77,7 @@ public class QueryCommand implements Callable<Integer> {
             if (searchPattern != null && (entry.message() == null || !searchPattern.matcher(entry.message()).find())) {
                 continue;
             }
-            System.out.println(PrettyFormatter.format(entry, true));
+            System.out.println(PrettyFormatter.format(entry, !noColor));
         }
         return 0;
     }
