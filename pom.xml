@@ -28,6 +28,7 @@
         <module>loglite-cli</module>
         <module>loglite-slf4j</module>
         <module>loglite-logback-appender</module>
+        <module>loglite-spring-boot-starter</module>
     </modules>
 
     <dependencyManagement>
