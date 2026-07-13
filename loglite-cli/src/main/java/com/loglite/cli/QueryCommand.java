@@ -7,6 +7,7 @@ import com.loglite.cli.config.CliConfig;
 import com.loglite.cli.config.ConfigStore;
 import com.loglite.cli.model.LogEntryDto;
 import com.loglite.cli.model.PagedResponseDto;
+import com.loglite.cli.output.PrettyFormatter;
 import com.loglite.cli.util.RelativeTimeParser;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -73,7 +74,7 @@ public class QueryCommand implements Callable<Integer> {
             if (searchPattern != null && (entry.message() == null || !searchPattern.matcher(entry.message()).find())) {
                 continue;
             }
-            System.out.println("[" + entry.level() + "] " + entry.timestamp() + " [" + entry.loggerName() + "] " + entry.message());
+            System.out.println(PrettyFormatter.format(entry));
         }
         return 0;
     }

@@ -2,6 +2,7 @@ package com.loglite.cli;
 
 import com.loglite.cli.client.JsonSupport;
 import com.loglite.cli.model.LogEntryDto;
+import com.loglite.cli.output.PrettyFormatter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -42,7 +43,7 @@ public class ParseCommand implements Callable<Integer> {
             if (levelFilter != null && (entry.level() == null || !levelFilter.contains(entry.level().toUpperCase()))) {
                 continue;
             }
-            System.out.println("[" + entry.level() + "] " + entry.timestamp() + " [" + entry.loggerName() + "] " + entry.message());
+            System.out.println(PrettyFormatter.format(entry));
             parsed++;
         }
         System.err.println(parsed + " entries parsed from " + file);
