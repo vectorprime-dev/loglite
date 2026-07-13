@@ -1,0 +1,54 @@
+# Runs a loglite-cli sidecar as a DaemonSet, tailing each node's container log
+# directory and forwarding entries to loglite-server.
+#
+# Configure LOGLITE_SERVER_URL and LOGLITE_API_KEY before applying, e.g.:
+#   kubectl create secret generic loglite-collector-secret \
+#     --from-literal=api-key=<your-api-key>
+#   kubectl apply -f loglite-collector-daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: loglite-collector
+  labels:
+    app: loglite-collector
+spec:
+  selector:
+    matchLabels:
+      app: loglite-collector
+  template:
+    metadata:
+      labels:
+        app: loglite-collector
+    spec:
+      containers:
+        - name: loglite-collector
+          image: loglite/loglite-cli:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              loglite-cli config --url "$LOGLITE_SERVER_URL" --key "$LOGLITE_API_KEY"
+              loglite-cli watch --file /var/log/containers/current.log
+          env:
+            - name: LOGLITE_SERVER_URL
+              value: "http://loglite-server.default.svc.cluster.local:8080"
+            - name: LOGLITE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: loglite-collector-secret
+                  key: api-key
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+      volumes:
+        - name: varlog
+          hostPath:
+            path: /var/log
