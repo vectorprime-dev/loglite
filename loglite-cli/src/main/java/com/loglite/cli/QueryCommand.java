@@ -51,6 +51,9 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--columns", split = ",", description = "Fields to display: time,level,logger,msg,thread")
     private java.util.List<String> columns;
 
+    @Option(names = "--truncate", description = "Maximum message length before truncating with an ellipsis")
+    private Integer truncate;
+
     @Override
     public Integer call() throws Exception {
         if (limit <= 0) {
@@ -81,10 +84,14 @@ public class QueryCommand implements Callable<Integer> {
                 continue;
             }
             LogEntryDto toPrint = entry;
-            if (searchPattern != null && !noColor && entry.message() != null) {
-                String highlighted = com.loglite.cli.output.Highlighter.highlight(entry.message(), searchPattern);
-                toPrint = new LogEntryDto(entry.id(), entry.timestamp(), entry.loggerName(), entry.level(),
-                        highlighted, entry.threadName(), entry.metadata());
+            if (truncate != null && toPrint.message() != null) {
+                toPrint = new LogEntryDto(toPrint.id(), toPrint.timestamp(), toPrint.loggerName(), toPrint.level(),
+                        com.loglite.cli.output.Truncator.truncate(toPrint.message(), truncate), toPrint.threadName(), toPrint.metadata());
+            }
+            if (searchPattern != null && !noColor && toPrint.message() != null) {
+                String highlighted = com.loglite.cli.output.Highlighter.highlight(toPrint.message(), searchPattern);
+                toPrint = new LogEntryDto(toPrint.id(), toPrint.timestamp(), toPrint.loggerName(), toPrint.level(),
+                        highlighted, toPrint.threadName(), toPrint.metadata());
             }
             System.out.println(PrettyFormatter.format(toPrint, !noColor, columns));
         }
