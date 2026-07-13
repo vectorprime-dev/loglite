@@ -35,6 +35,9 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--search", description = "Regular expression matched against each log message")
     private String search;
 
+    @Option(names = "--meta", description = "Metadata filter as key=value, e.g. --meta tenantId=alpha")
+    private java.util.Map<String, String> metadata;
+
     @Override
     public Integer call() throws Exception {
         CliConfig config = ConfigStore.load();
@@ -73,6 +76,11 @@ public class QueryCommand implements Callable<Integer> {
         if (levels != null) {
             for (String level : levels) {
                 appendParam(query, "level", level.trim().toUpperCase());
+            }
+        }
+        if (metadata != null) {
+            for (var entry : metadata.entrySet()) {
+                appendParam(query, "metadata." + entry.getKey(), entry.getValue());
             }
         }
 
