@@ -57,6 +57,9 @@ public class QueryCommand implements Callable<Integer> {
     @Option(names = "--format", defaultValue = "pretty", description = "Output format: pretty, json, csv, md")
     private String format;
 
+    @Option(names = "--pager", description = "Pipe pretty output through the system pager (less/more)")
+    private boolean pager;
+
     @Override
     public Integer call() throws Exception {
         if (limit <= 0) {
@@ -103,6 +106,7 @@ public class QueryCommand implements Callable<Integer> {
             return 0;
         }
 
+        java.util.List<String> renderedLines = new java.util.ArrayList<>();
         for (LogEntryDto entry : filtered) {
             LogEntryDto toPrint = entry;
             if (truncate != null && toPrint.message() != null) {
@@ -114,7 +118,13 @@ public class QueryCommand implements Callable<Integer> {
                 toPrint = new LogEntryDto(toPrint.id(), toPrint.timestamp(), toPrint.loggerName(), toPrint.level(),
                         highlighted, toPrint.threadName(), toPrint.metadata());
             }
-            System.out.println(PrettyFormatter.format(toPrint, !noColor, columns));
+            renderedLines.add(PrettyFormatter.format(toPrint, !noColor, columns));
+        }
+
+        if (pager) {
+            com.loglite.cli.output.Pager.page(renderedLines);
+        } else {
+            renderedLines.forEach(System.out::println);
         }
         return 0;
     }
