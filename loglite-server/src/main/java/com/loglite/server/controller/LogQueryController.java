@@ -78,4 +78,12 @@ public class LogQueryController {
         Page<LogEntry> result = repository.findAll(spec, pageRequest);
         return PagedResponse.from(result);
     }
+
+    /**
+     * @return the distinct logger/service names that have reported log entries
+     */
+    @GetMapping("/services")
+    public List<String> services() {
+        return repository.findDistinctLoggerNames();
+    }
 }
