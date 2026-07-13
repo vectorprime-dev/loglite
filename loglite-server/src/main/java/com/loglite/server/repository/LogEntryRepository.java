@@ -27,6 +27,13 @@ public interface LogEntryRepository extends JpaRepository<LogEntry, UUID>, JpaSp
     List<LogEntry> findByMetadataKeyValue(@Param("key") String key, @Param("value") String value);
 
     /**
+     * @return the distinct, non-null logger names recorded across all entries, used to
+     *         identify the set of services that have reported logs
+     */
+    @Query("SELECT DISTINCT le.loggerName FROM LogEntry le WHERE le.loggerName IS NOT NULL ORDER BY le.loggerName")
+    List<String> findDistinctLoggerNames();
+
+    /**
      * @return the number of entries recorded at each log level
      */
     @Query("SELECT le.level as level, COUNT(le) as count FROM LogEntry le GROUP BY le.level")
