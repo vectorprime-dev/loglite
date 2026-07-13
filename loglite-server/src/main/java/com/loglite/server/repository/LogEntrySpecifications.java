@@ -60,4 +60,15 @@ public final class LogEntrySpecifications {
     public static Specification<LogEntry> messageContains(String search) {
         return (root, query, cb) -> cb.like(cb.lower(root.get("message")), "%" + search.toLowerCase() + "%");
     }
+
+    /**
+     * Matches entries whose message contains an embedded exception/stack trace, identified by
+     * either an {@code "Exception"}/{@code "Error"} type name or a {@code "\tat "} stack frame line.
+     */
+    public static Specification<LogEntry> hasException() {
+        return (root, query, cb) -> cb.or(
+                cb.like(root.get("message"), "%Exception%"),
+                cb.like(root.get("message"), "%Error%"),
+                cb.like(root.get("message"), "%\n\tat %"));
+    }
 }
