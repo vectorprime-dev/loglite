@@ -18,11 +18,20 @@ public final class PrettyFormatter {
     }
 
     public static String format(LogEntryDto entry) {
+        return format(entry, false);
+    }
+
+    public static String format(LogEntryDto entry, boolean color) {
         String time = entry.timestamp() != null ? TIME_FORMAT.format(entry.timestamp()) : "--:--:--";
         String[] lines = entry.message() != null ? entry.message().split("\n", -1) : new String[] {""};
 
+        String levelTag = "[" + entry.level() + "]";
+        if (color) {
+            levelTag = AnsiColors.colorFor(entry.level()) + levelTag + AnsiColors.RESET;
+        }
+
         StringBuilder result = new StringBuilder();
-        result.append('[').append(entry.level()).append("] ")
+        result.append(levelTag).append(' ')
                 .append(time).append(" [").append(entry.loggerName()).append("] ")
                 .append(lines[0]);
 
