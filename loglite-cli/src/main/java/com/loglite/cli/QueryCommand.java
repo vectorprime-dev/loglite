@@ -77,7 +77,13 @@ public class QueryCommand implements Callable<Integer> {
             if (searchPattern != null && (entry.message() == null || !searchPattern.matcher(entry.message()).find())) {
                 continue;
             }
-            System.out.println(PrettyFormatter.format(entry, !noColor));
+            LogEntryDto toPrint = entry;
+            if (searchPattern != null && !noColor && entry.message() != null) {
+                String highlighted = com.loglite.cli.output.Highlighter.highlight(entry.message(), searchPattern);
+                toPrint = new LogEntryDto(entry.id(), entry.timestamp(), entry.loggerName(), entry.level(),
+                        highlighted, entry.threadName(), entry.metadata());
+            }
+            System.out.println(PrettyFormatter.format(toPrint, !noColor));
         }
         return 0;
     }

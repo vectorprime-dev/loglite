@@ -7,6 +7,7 @@ public final class AnsiColors {
 
     private static final String ESC = String.valueOf((char) 27);
     public static final String RESET = ESC + "[0m";
+    public static final String HIGHLIGHT = ESC + "[1;33;40m";
     private static final String RED = ESC + "[31m";
     private static final String YELLOW = ESC + "[33m";
     private static final String GREEN = ESC + "[32m";
