@@ -1,6 +1,7 @@
 package com.loglite.cli;
 
 import com.loglite.cli.config.ConfigCommand;
+import com.loglite.cli.config.ProfilesCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -13,7 +14,7 @@ import picocli.CommandLine.Command;
         mixinStandardHelpOptions = true,
         versionProvider = VersionProvider.class,
         description = "Command-line client for querying and uploading Loglite log events.",
-        subcommands = {ConfigCommand.class})
+        subcommands = {ConfigCommand.class, ProfilesCommand.class})
 public class LogliteCli implements Runnable {
 
     @Override
