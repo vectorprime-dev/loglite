@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package com.loglite.server.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.loglite.server.grpc";
+option java_outer_classname = "LogIngestProto";
+
+// High-throughput log ingestion schema, mirroring the REST ingestion payload.
+message LogEntryMessage {
+  string timestamp = 1;
+  string logger_name = 2;
+  string level = 3;
+  string message = 4;
+  string thread_name = 5;
+  map<string, string> metadata = 6;
+}
+
+message IngestResponse {
+  int32 accepted = 1;
+}
+
+service LogIngestService {
+  // Unary ingestion of a single log entry.
+  rpc Ingest(LogEntryMessage) returns (IngestResponse);
+
+  // Client-streaming ingestion for high-throughput batch collection.
+  rpc IngestStream(stream LogEntryMessage) returns (IngestResponse);
+}
